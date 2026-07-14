@@ -436,6 +436,13 @@ set(DORIS_LINK_LIBS
     ${WL_END_GROUP}
     ${DORIS_LINK_LIBS})
 
+# libstdc++'s parallel algorithms (std::execution::par) use oneTBB as their backend
+# when the system TBB is present; link it so those symbols resolve.
+find_library(TBB_LIBRARY tbb)
+if (TBB_LIBRARY)
+    set(DORIS_LINK_LIBS ${DORIS_LINK_LIBS} ${TBB_LIBRARY})
+endif()
+
 # Set libraries for test
 set (TEST_LINK_LIBS ${DORIS_LINK_LIBS}
     ${WL_START_GROUP}

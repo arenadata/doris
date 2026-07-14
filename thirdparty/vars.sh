@@ -187,11 +187,11 @@ BOOST_NAME=boost_1_81_0.tar.gz
 BOOST_SOURCE=boost_1_81_0
 BOOST_MD5SUM="4bf02e84afb56dfdccd1e6aec9911f4b"
 
-# mysql
-MYSQL_DOWNLOAD="https://github.com/mysql/mysql-server/archive/mysql-5.7.18.tar.gz"
-MYSQL_NAME=mysql-5.7.18.tar.gz
-MYSQL_SOURCE=mysql-server-mysql-5.7.18
-MYSQL_MD5SUM="58598b10dce180e4d1fbdd7cf5fa68d6"
+# mariadb-connector-c (provides a libmysqlclient-compatible client lib)
+MARIADB_DOWNLOAD="https://github.com/mariadb-corporation/mariadb-connector-c/archive/refs/tags/v3.1.14.tar.gz"
+MARIADB_NAME="mariadb-connector-c-3.1.14.tar.gz"
+MARIADB_SOURCE="mariadb-connector-c-3.1.14"
+MARIADB_MD5SUM="86c4052adeb8447900bf33b4e2ddd1f9"
 
 # unix odbc
 ODBC_DOWNLOAD="http://www.unixodbc.org/unixODBC-2.3.7.tar.gz"
@@ -596,7 +596,7 @@ export TP_ARCHIVES=(
     'HYPERSCAN'
     'RAGEL'
     'BOOST'
-    'MYSQL'
+    'MARIADB'
     'ODBC'
     'LEVELDB'
     'BRPC'

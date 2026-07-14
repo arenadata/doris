@@ -65,6 +65,7 @@ else()
     add_thirdparty(tcmalloc WHOLELIBPATH ${GPERFTOOLS_HOME}/lib/libtcmalloc.a NOTADD)
 endif()
 add_thirdparty(leveldb) # Required by brpc
+add_thirdparty(snappy) # Required by leveldb
 add_thirdparty(brpc LIB64)
 add_thirdparty(rocksdb) # For local storage mocking
 add_thirdparty(libz LIBNAME "lib/libz.a") # Required by google::protobuf

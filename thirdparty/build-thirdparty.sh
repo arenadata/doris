@@ -182,12 +182,18 @@ elif [[ "${CC}" == *clang ]]; then
     warning_suggest_override='-Wno-suggest-override -Wno-suggest-destructor-override'
     warning_option_ignored='-Wno-option-ignored'
     warning_narrowing='-Wno-c++11-narrowing'
+    warning_unnecessary_virtual_specifier='-Wno-unnecessary-virtual-specifier'
     boost_toolset='clang'
     libhdfs_cxx17='-std=c++1z'
 
     test_warning_result="$("${CC}" -xc++ "${warning_unused_but_set_variable}" /dev/null 2>&1 || true)"
     if echo "${test_warning_result}" | grep 'unknown warning option' >/dev/null; then
         warning_unused_but_set_variable=''
+    fi
+
+    test_warning_result="$("${CC}" -xc++ "${warning_unnecessary_virtual_specifier}" /dev/null 2>&1 || true)"
+    if echo "${test_warning_result}" | grep 'unknown warning option' >/dev/null; then
+        warning_unnecessary_virtual_specifier=''
     fi
 fi
 
@@ -781,50 +787,46 @@ build_boost() {
 }
 
 # mysql
-build_mysql() {
-    check_if_source_exist "${MYSQL_SOURCE}"
-    check_if_source_exist "${BOOST_SOURCE}"
+# mariadb-connector-c provides a libmysqlclient-compatible static client lib.
+# It is installed as libmysqlclient.a with headers under include/mysql/ so that
+# Doris consumers (`-lmysqlclient`, `#include <mysql/mysql.h>`) keep working.
+build_mariadb() {
+    check_if_source_exist "${MARIADB_SOURCE}"
 
-    cd "${TP_SOURCE_DIR}/${MYSQL_SOURCE}"
+    cd "${TP_SOURCE_DIR}/${MARIADB_SOURCE}"
 
     mkdir -p "${BUILD_DIR}"
     cd "${BUILD_DIR}"
 
     rm -rf CMakeCache.txt CMakeFiles/
 
-    if [[ ! -d "${BOOST_SOURCE}" ]]; then
-        cp -rf "${TP_SOURCE_DIR}/${BOOST_SOURCE}" ./
-    fi
-
-    if [[ "${KERNEL}" != 'Darwin' ]]; then
-        cflags='-static -pthread -lrt -std=gnu89'
-        cxxflags='-static -pthread -lrt'
-    else
-        cflags='-pthread -std=gnu89'
-        cxxflags='-pthread'
-    fi
-
-    CFLAGS="${cflags}" CXXFLAGS="${cxxflags}" \
+    CFLAGS="-O3 -fno-omit-frame-pointer -fPIC -std=gnu17" \
         "${CMAKE_CMD}" -G "${GENERATOR}" ../ -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-        -DCMAKE_LINK_SEARCH_END_STATIC=1 \
-        -DWITH_BOOST="$(pwd)/${BOOST_SOURCE}" -DCMAKE_INSTALL_PREFIX="${TP_INSTALL_DIR}/mysql" \
-        -DWITHOUT_SERVER=1 -DWITH_ZLIB=1 -DZLIB_ROOT="${TP_INSTALL_DIR}" \
-        -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O3 -g -fabi-version=2 -fno-omit-frame-pointer -fno-strict-aliasing -std=gnu++11" \
-        -DDISABLE_SHARED=1 -DBUILD_SHARED_LIBS=0 -DZLIB_LIBRARY="${TP_INSTALL_DIR}/lib/libz.a" -DENABLE_DTRACE=0
-    "${BUILD_SYSTEM}" -j "${PARALLEL}" mysqlclient
+        -DCMAKE_BUILD_TYPE=Release \
+        -DWITH_UNIT_TESTS=OFF \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DWITH_EXTERNAL_ZLIB=ON \
+        -DZLIB_LIBRARY="${TP_INSTALL_DIR}/lib/libz.a" \
+        -DZLIB_INCLUDE_DIR="${TP_INSTALL_DIR}/include" \
+        -DOPENSSL_ROOT_DIR="${TP_INSTALL_DIR}" \
+        -DOPENSSL_USE_STATIC_LIBS=TRUE \
+        -DCMAKE_INSTALL_PREFIX="${TP_INSTALL_DIR}"
 
-    # copy headers manually
-    rm -rf ../../../installed/include/mysql/
-    mkdir ../../../installed/include/mysql/ -p
-    cp -R ./include/* ../../../installed/include/mysql/
-    cp -R ../include/* ../../../installed/include/mysql/
-    cp ../libbinlogevents/export/binary_log_types.h ../../../installed/include/mysql/
-    echo "mysql headers are installed."
+    # we only need the static client lib and headers
+    "${BUILD_SYSTEM}" -j "${PARALLEL}" mariadbclient
 
-    # copy libmysqlclient.a
-    cp libmysql/libmysqlclient.a ../../../installed/lib/
-    echo "mysql client lib is installed."
+    # install as libmysqlclient.a so `-lmysqlclient` keeps resolving
+    cp libmariadb/libmariadbclient.a "${TP_INSTALL_DIR}/lib/libmysqlclient.a"
+    echo "mysql client lib (mariadb-connector-c) is installed."
     strip_lib libmysqlclient.a
+
+    # install headers under include/mysql/ for `#include <mysql/mysql.h>`
+    rm -rf "${TP_INSTALL_DIR}/include/mysql/"
+    mkdir -p "${TP_INSTALL_DIR}/include/mysql/"
+    cp -R "${TP_SOURCE_DIR}/${MARIADB_SOURCE}/include/." "${TP_INSTALL_DIR}/include/mysql/"
+    cp -f include/mariadb_version.h "${TP_INSTALL_DIR}/include/mysql/"
+    cp -f include/ma_config.h "${TP_INSTALL_DIR}/include/mysql/" 2>/dev/null || true
+    echo "mysql (mariadb) headers are installed."
 }
 
 #leveldb
@@ -872,7 +874,7 @@ build_brpc() {
     # but glog 0.6 enforces dependency on gflags.
     # glog must be enabled, otherwise error: `flag 'v' was defined more than once` (in files 'glog-0.6.0/src/vlog_is_on.cc' and 'brpc-1.6.0/src/butil/logging.cc')
     LDFLAGS="${ldflags}" \
-        "${CMAKE_CMD}" -G "${GENERATOR}" -DBUILD_SHARED_LIBS=ON -DWITH_GLOG=ON -DCMAKE_INSTALL_PREFIX="${TP_INSTALL_DIR}" \
+        "${CMAKE_CMD}" -G "${GENERATOR}" -DBUILD_SHARED_LIBS=ON -DWITH_GLOG=ON -DWITH_SNAPPY=ON -DCMAKE_INSTALL_PREFIX="${TP_INSTALL_DIR}" \
         -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
         -DCMAKE_LIBRARY_PATH="${TP_INSTALL_DIR}/lib64" -DCMAKE_INCLUDE_PATH="${TP_INSTALL_DIR}/include" \
         -DBUILD_BRPC_TOOLS=OFF \
@@ -904,7 +906,7 @@ build_rocksdb() {
     # -Wno-range-loop-construct gcc-11
     CFLAGS="-I ${TP_INCLUDE_DIR} -I ${TP_INCLUDE_DIR}/snappy -I ${TP_INCLUDE_DIR}/lz4" \
         CXXFLAGS="-include cstdint -Wno-deprecated-copy ${warning_stringop_truncation} ${warning_shadow} ${warning_dangling_gsl} \
-    ${warning_defaulted_function_deleted} ${warning_unused_but_set_variable} -Wno-pessimizing-move -Wno-range-loop-construct" \
+    ${warning_defaulted_function_deleted} ${warning_unused_but_set_variable} ${warning_unnecessary_virtual_specifier} -Wno-pessimizing-move -Wno-range-loop-construct" \
         LDFLAGS="${ldflags}" \
         PORTABLE=1 make USE_RTTI=1 -j "${PARALLEL}" static_lib
     cp librocksdb.a ../../installed/lib/librocksdb.a
@@ -1077,6 +1079,8 @@ build_arrow() {
     export ARROW_ORC_URL="${TP_SOURCE_DIR}/${ORC_NAME}"
     export ARROW_GRPC_URL="${TP_SOURCE_DIR}/${GRPC_NAME}"
     export ARROW_PROTOBUF_URL="${TP_SOURCE_DIR}/${PROTOBUF_NAME}"
+
+    export CMAKE_POLICY_VERSION_MINIMUM=3.5
 
     if [[ "${KERNEL}" != 'Darwin' ]]; then
         ldflags="-L${TP_LIB_DIR} -static-libstdc++ -static-libgcc"
@@ -1427,6 +1431,7 @@ build_aws_sdk() {
         -DCMAKE_PREFIX_PATH="${TP_INSTALL_DIR}" -DBUILD_SHARED_LIBS=OFF -DENABLE_TESTING=OFF \
         -DCURL_LIBRARY_RELEASE="${TP_INSTALL_DIR}/lib/libcurl.a" -DZLIB_LIBRARY_RELEASE="${TP_INSTALL_DIR}/lib/libz.a" \
         -DBUILD_ONLY="core;s3;s3-crt;transfer;identity-management;sts" \
+        -DAWS_SDK_WARNINGS_ARE_ERRORS=OFF -DAWS_WARNINGS_ARE_ERRORS=OFF \
         -DCMAKE_CXX_FLAGS="-Wno-nonnull -Wno-deprecated-literal-operator ${warning_deprecated_literal_operator} -Wno-deprecated-declarations ${warning_dangling_reference}" -DCPP_STANDARD=17
 
     cd "${BUILD_DIR}"
@@ -1550,8 +1555,8 @@ build_krb5() {
         ../configure --prefix="${TP_INSTALL_DIR}" --disable-shared --enable-static \
         --without-keyutils ${with_crypto_impl:+${with_crypto_impl}}
 
-    make -j "${PARALLEL}"
-    make install
+    make -j "${PARALLEL}" WARN_CFLAGS=
+    make install WARN_CFLAGS=
 }
 
 # hdfs3
@@ -2133,7 +2138,7 @@ if [[ "${#packages[@]}" -eq 0 ]]; then
         libdivide
         cctz
         tsan_header
-        mysql
+        mariadb
         aws_sdk
         js_and_css
         lzma
@@ -2206,7 +2211,7 @@ cleanup_package_source() {
             fi
             src_var="HYPERSCAN_SOURCE"
             ;;
-        mysql)           src_var="MYSQL_SOURCE" ;;
+        mariadb)         src_var="MARIADB_SOURCE" ;;
         odbc)            src_var="ODBC_SOURCE" ;;
         leveldb)         src_var="LEVELDB_SOURCE" ;;
         brpc)            src_var="BRPC_SOURCE" ;;

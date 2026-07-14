@@ -729,8 +729,20 @@ if (GLIBC_COMPATIBILITY)
 endif()
 
 if (NOT OS_MACOSX)
-    set(CMAKE_CXX_STANDARD_LIBRARIES "-lrt -l:libbfd.a -liberty -lc -lm -ldl -pthread")
-    set(CMAKE_C_STANDARD_LIBRARIES "-lrt -l:libbfd.a -liberty -lc -lm -ldl -pthread")
+    # binutils >= 2.40 split SFrame support out of libbfd into a separate libsframe;
+    # when present it must be linked after libbfd.a (static preferred, else shared).
+    set(BFD_SFRAME_LIB "")
+    file(GLOB _sframe_static /usr/lib/*/libsframe.a /usr/lib/libsframe.a /usr/lib64/libsframe.a /lib/*/libsframe.a)
+    file(GLOB _sframe_shared /usr/lib/*/libsframe.so.* /usr/lib/libsframe.so.* /usr/lib64/libsframe.so.* /lib/*/libsframe.so.*)
+    if (_sframe_static)
+        set(BFD_SFRAME_LIB " -l:libsframe.a")
+    elseif (_sframe_shared)
+        list(SORT _sframe_shared)
+        list(GET _sframe_shared 0 _sframe_so)
+        set(BFD_SFRAME_LIB " ${_sframe_so}")
+    endif()
+    set(CMAKE_CXX_STANDARD_LIBRARIES "-lrt -l:libbfd.a -liberty${BFD_SFRAME_LIB} -lc -lm -ldl -pthread")
+    set(CMAKE_C_STANDARD_LIBRARIES "-lrt -l:libbfd.a -liberty${BFD_SFRAME_LIB} -lc -lm -ldl -pthread")
 else()
     set(DORIS_LINK_LIBS ${DORIS_LINK_LIBS}
         "-framework CoreFoundation"
