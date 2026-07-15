@@ -107,6 +107,16 @@ if [[ -z "${FE_UT_PARALLEL}" ]]; then
 fi
 echo "Unit test parallel is: ${FE_UT_PARALLEL}"
 
+MODULES_ARG=()
+if [[ -n "${FE_UT_MODULES}" ]]; then
+    MODULES_ARG=(-pl "${FE_UT_MODULES}" -am)
+fi
+
+RERUN_ARG=()
+if [[ -n "${FE_UT_RERUN}" ]]; then
+    RERUN_ARG=(-Dsurefire.rerunFailingTestsCount="${FE_UT_RERUN}")
+fi
+
 if [[ "${RUN}" -eq 1 ]]; then
     echo "Run the specified class: $1"
     # eg:
@@ -114,15 +124,15 @@ if [[ "${RUN}" -eq 1 ]]; then
     # sh run-fe-ut.sh --run org.apache.doris.utframe.DemoTest#testCreateDbAndTable+test2
 
     if [[ "${COVERAGE}" -eq 1 ]]; then
-        "${MVN_CMD}" test jacoco:report -DfailIfNoTests=false -Dtest="$1"
+        "${MVN_CMD}" test jacoco:report -DfailIfNoTests=false -Dtest="$1" "${MODULES_ARG[@]}" "${RERUN_ARG[@]}"
     else
-        "${MVN_CMD}" test -Dcheckstyle.skip=true -DfailIfNoTests=false -Dtest="$1"
+        "${MVN_CMD}" test -Dcheckstyle.skip=true -DfailIfNoTests=false -Dtest="$1" "${MODULES_ARG[@]}" "${RERUN_ARG[@]}"
     fi
 else
     echo "Run Frontend UT"
     if [[ "${COVERAGE}" -eq 1 ]]; then
-        "${MVN_CMD}" test jacoco:report -DfailIfNoTests=false -Dmaven.test.failure.ignore=true
+        "${MVN_CMD}" test jacoco:report -DfailIfNoTests=false -Dmaven.test.failure.ignore=true "${MODULES_ARG[@]}" "${RERUN_ARG[@]}"
     else
-        "${MVN_CMD}" test -Dcheckstyle.skip=true -DfailIfNoTests=false
+        "${MVN_CMD}" test -Dcheckstyle.skip=true -DfailIfNoTests=false "${MODULES_ARG[@]}" "${RERUN_ARG[@]}"
     fi
 fi
