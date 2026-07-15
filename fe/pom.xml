@@ -331,7 +331,7 @@ under the License.
         <!-- ATTN: avro version must be consistent with Iceberg version -->
         <!-- Please modify iceberg.version and avro.version together,
          you can find avro version info in iceberg mvn repository -->
-        <iceberg.version>1.10.1</iceberg.version>
+        <iceberg.version>1.10.1.1-4.3.0-1</iceberg.version>
         <!-- 0.56.1 has bug that "SplitMode" in query response may not be set-->
         <maxcompute.version>0.53.2-public</maxcompute.version>
         <!-- Arrow 19.0.1 will MacOS compile error and decimal type error when convert to Parquet
@@ -347,18 +347,19 @@ under the License.
         <commons-compress.version>1.27.1</commons-compress.version>
         <scala.version>2.12.10</scala.version>
         <kryo.version>4.0.2</kryo.version>
-        <lombok.version>1.18.24</lombok.version>
+        <lombok.version>1.18.34</lombok.version>
         <tree-printer.version>1.2</tree-printer.version>
         <hamcrest.version>2.1</hamcrest.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.15</httpcore.version>
         <aws-java-sdk.version>1.12.669</aws-java-sdk.version>
         <mariadb-java-client.version>3.0.9</mariadb-java-client.version>
-        <hadoop.version>3.4.2</hadoop.version>
+        <hadoop.version>3.4.3.1-4.3.0-1</hadoop.version>
+        <ozone.version>2.1.0.1-4.3.0-1</ozone.version>
         <re2j.version>1.8</re2j.version>
         <hadoop.thirdparty.guava.version>1.2.0</hadoop.thirdparty.guava.version>
         <hadoop.thirdparty.protobuf_3_25.version>1.5.0</hadoop.thirdparty.protobuf_3_25.version>
-        <hbase.version>2.6.3</hbase.version>
+        <hbase.version>2.6.5.1-4.3.0-0</hbase.version>
         <jline.version>3.30.6</jline.version>
         <hbase-shaded-gson.version>4.1.7</hbase-shaded-gson.version>
         <antlr4.version>4.13.1</antlr4.version>
@@ -367,9 +368,9 @@ under the License.
         <spring.version>3.5.7</spring.version>
         <spring-framework.version>6.2.12</spring-framework.version>
         <orc.version>1.8.4</orc.version>
-        <zookeeper.version>3.9.3</zookeeper.version>
+        <zookeeper.version>3.9.5.1-4.3.0-0</zookeeper.version>
         <velocity-engine-core.version>2.4</velocity-engine-core.version>
-        <ranger-plugins-common.version>2.8.0</ranger-plugins-common.version>
+        <ranger-plugins-common.version>2.6.0.4-2.2.0-1</ranger-plugins-common.version>
         <bcprov-jdk15on.version>1.70</bcprov-jdk15on.version>
         <woodstox.version>6.5.1</woodstox.version>
         <kerby.version>2.0.3</kerby.version>
@@ -707,6 +708,11 @@ under the License.
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-client-api</artifactId>
                 <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.ozone</groupId>
+                <artifactId>ozone-filesystem-hadoop3</artifactId>
+                <version>${ozone.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop.thirdparty</groupId>
@@ -1944,6 +1950,10 @@ under the License.
         </plugins>
     </reporting>
     <repositories>
+        <repository>
+            <id>arenadata</id>
+            <url>https://maven.pkg.github.com/arenadata/*</url>
+        </repository>
         <!--todo waiting hive-catalog release-->
         <repository>
             <id>snapshots</id>
