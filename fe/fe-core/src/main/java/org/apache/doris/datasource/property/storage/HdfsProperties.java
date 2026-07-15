@@ -88,7 +88,7 @@ public class HdfsProperties extends HdfsCompatibleProperties {
 
     private static final String DFS_NAME_SERVICES_KEY = "dfs.nameservices";
 
-    private static final Set<String> supportSchema = ImmutableSet.of("hdfs", "viewfs", "jfs");
+    private static final Set<String> supportSchema = ImmutableSet.of("hdfs", "viewfs", "jfs", "ofs", "o3fs");
 
     /**
      * The final HDFS configuration map that determines the effective settings.

@@ -55,8 +55,9 @@ public enum SchemaTypeMapper {
     S3A("s3a", StorageProperties.Type.S3, FileSystemType.S3, TFileType.FILE_S3),
     S3N("s3n", StorageProperties.Type.S3, FileSystemType.S3, TFileType.FILE_S3),
     COSN("cosn", StorageProperties.Type.COS, FileSystemType.S3, TFileType.FILE_S3),
-    //todo Support for this type is planned but not yet implemented.
-    OFS("ofs", StorageProperties.Type.BROKER, FileSystemType.OFS, TFileType.FILE_BROKER),
+    // Ozone (ofs/o3fs) is accessed through a Hadoop FileSystem implementation, like HDFS.
+    OFS("ofs", StorageProperties.Type.HDFS, FileSystemType.HDFS, TFileType.FILE_HDFS),
+    O3FS("o3fs", StorageProperties.Type.HDFS, FileSystemType.HDFS, TFileType.FILE_HDFS),
     GFS("gfs", StorageProperties.Type.BROKER, FileSystemType.HDFS, TFileType.FILE_BROKER),
     // JuiceFS is mounted through Hadoop FileSystem implementation in Doris,
     // so it should follow the HDFS-compatible path.

@@ -182,8 +182,8 @@ public class LocationPathTest {
         // BE
         beLocation = locationPath.toStorageLocation().toString();
         Assertions.assertTrue(beLocation.startsWith("ofs://"));
-        Assertions.assertEquals(FileSystemType.OFS, locationPath.getFileSystemType());
-        Assertions.assertEquals(TFileType.FILE_BROKER, locationPath.getTFileTypeForBE());
+        Assertions.assertEquals(FileSystemType.HDFS, locationPath.getFileSystemType());
+        Assertions.assertEquals(TFileType.FILE_HDFS, locationPath.getTFileTypeForBE());
 
         // GFS is now equals to DFS
         locationPath = LocationPath.of("gfs://test.com");
