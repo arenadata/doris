@@ -120,7 +120,8 @@ TEST(MemTableFlushExecutorTest, TestDynamicThreadPoolUpdate) {
 
     int num_cpus = std::thread::hardware_concurrency();
     if (num_cpus > 0) {
-        int expected_max = std::min(10 * 1, num_cpus * 2); // 1 disk, 10 threads per store
+        // 1 disk, 10 threads per store; pool max cannot drop below min_threads.
+        int expected_max = std::max(new_min_threads, std::min(10 * 1, num_cpus * 2));
         int actual_max = flush_executor->flush_pool()->max_threads();
         EXPECT_EQ(actual_max, expected_max);
     }

@@ -135,6 +135,11 @@ public class UtFrameUtils {
         Config.edit_log_type = "local";
         Config.disable_decimalv2 = false;
         Config.disable_datev1 = false;
+        // Pin FE to loopback: pseudo-cluster backends run on 127.0.0.x, and a host bridge
+        // (e.g. docker0 172.17.0.1) would otherwise be auto-selected, breaking FE<->BE heartbeat.
+        if (Strings.isNullOrEmpty(Config.priority_networks)) {
+            Config.priority_networks = "127.0.0.0/8";
+        }
         File file = new File(Config.custom_config_dir);
         if (!file.exists()) {
             file.mkdir();
