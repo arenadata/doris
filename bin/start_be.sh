@@ -83,15 +83,20 @@ DORIS_HOME="$(
 )"
 export DORIS_HOME
 
+if [[ -e "${DORIS_HOME}/conf/doris_env.sh" ]]; then
+    # shellcheck disable=1091
+    source "${DORIS_HOME}/conf/doris_env.sh"
+fi
+
 # export env variables from be.conf
 #
 # LOG_DIR
 # PID_DIR
 export LOG_DIR="${DORIS_HOME}/log"
-PID_DIR="$(
+PID_DIR="${PID_DIR:-$(
     cd "${curdir}"
     pwd
-)"
+)}"
 export PID_DIR
 
 # read from be.conf
@@ -418,8 +423,13 @@ if [[ "${java_version}" -eq 17 ]]; then
         JAVA_OPTS_FOR_JDK_17="-Xmx1024m ${LOG_PATH} -Xlog:gc:${DORIS_HOME}/log/be.gc.log.${CUR_DATE} ${COMMON_OPTS} --add-opens=java.base/java.net=ALL-UNNAMED"
     fi
     final_java_opt="${JAVA_OPTS_FOR_JDK_17}"
+elif [[ "${java_version}" -eq 21 ]]; then
+    if [[ -z ${JAVA_OPTS_FOR_JDK_21} ]]; then
+        JAVA_OPTS_FOR_JDK_21="-Xmx1024m ${LOG_PATH} -Xlog:gc:${DORIS_HOME}/log/be.gc.log.${CUR_DATE} ${COMMON_OPTS} --add-opens=java.base/java.net=ALL-UNNAMED"
+    fi
+    final_java_opt="${JAVA_OPTS_FOR_JDK_21}"
 else
-    echo "ERROR: The jdk_version is ${java_version}, it must be 17." >>"${LOG_DIR}/be.out"
+    echo "ERROR: The jdk_version is ${java_version}, it must be 17 or 21." >>"${LOG_DIR}/be.out"
     exit 1
 fi
 

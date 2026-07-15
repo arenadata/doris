@@ -108,6 +108,11 @@ DORIS_HOME="$(
 )"
 export DORIS_HOME
 
+if [[ -e "${DORIS_HOME}/conf/doris_env.sh" ]]; then
+    # shellcheck disable=1091
+    source "${DORIS_HOME}/conf/doris_env.sh"
+fi
+
 # export env variables from fe.conf
 #
 # JAVA_OPTS
@@ -115,10 +120,10 @@ export DORIS_HOME
 # PID_DIR
 export JAVA_OPTS="-Xmx1024m"
 export LOG_DIR="${DORIS_HOME}/log"
-PID_DIR="$(
+PID_DIR="${PID_DIR:-$(
     cd "${curdir}"
     pwd
-)"
+)}"
 export PID_DIR
 
 while read -r line; do
@@ -314,8 +319,14 @@ if [[ "${java_version}" -eq 17 ]]; then
         exit 1
     fi
     final_java_opt="${JAVA_OPTS_FOR_JDK_17}"
+elif [[ "${java_version}" -eq 21 ]]; then
+    if [[ -z "${JAVA_OPTS_FOR_JDK_21}" ]]; then
+        echo "JAVA_OPTS_FOR_JDK_21 is not set in fe.conf"
+        exit 1
+    fi
+    final_java_opt="${JAVA_OPTS_FOR_JDK_21}"
 else
-    echo "ERROR: The jdk_version is ${java_version}, must be 17."
+    echo "ERROR: The jdk_version is ${java_version}, must be 17 or 21."
     exit 1
 fi
 log "Using Java version ${java_version}"

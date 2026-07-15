@@ -26,10 +26,15 @@ DORIS_HOME="$(
 )"
 export DORIS_HOME
 
-PID_DIR="$(
+if [[ -e "${DORIS_HOME}/conf/doris_env.sh" ]]; then
+    # shellcheck disable=1091
+    source "${DORIS_HOME}/conf/doris_env.sh"
+fi
+
+PID_DIR="${PID_DIR:-$(
     cd "${curdir}"
     pwd
-)"
+)}"
 export PID_DIR
 
 while read -r line; do
